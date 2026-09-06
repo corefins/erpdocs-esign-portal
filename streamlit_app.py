@@ -46,6 +46,7 @@ from typing import Any, Optional
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
@@ -1601,29 +1602,36 @@ if view == "form":
         # add ?event=signing_complete|decline, which triggers the completion
         # card above. This avoids iframe navigation to Streamlit Cloud (which
         # redirect-loops on share.streamlit.io).
-        st.html("""
+        # postMessage listener: ERPDocs posts 'complete' or 'decline' events
+        # to the parent frame (this Streamlit app) when the signer finishes.
+        # We use st.components.v1.html (not st.html) because it creates a
+        # persistent iframe whose script reliably executes and stays alive.
+        # The listener watches window.parent (the Streamlit app window) for
+        # ERPDocs messages, then navigates the parent to add ?event=... which
+        # triggers the completion card above.
+        components.html("""
         <script>
         (function() {
-            window.addEventListener('message', function(event) {
+            window.parent.addEventListener('message', function(event) {
                 var d = event.data || {};
                 if (d.type === 'complete') {
-                    var url = new URL(window.location.href);
+                    var url = new URL(window.parent.location.href);
                     url.searchParams.set('event', 'signing_complete');
-                    window.location.href = url.toString();
+                    window.parent.location.href = url.toString();
                 } else if (d.type === 'decline') {
-                    var url = new URL(window.location.href);
+                    var url = new URL(window.parent.location.href);
                     url.searchParams.set('event', 'decline');
-                    window.location.href = url.toString();
+                    window.parent.location.href = url.toString();
                 } else if (d.type === 'redirect') {
                     var ev = d.event || 'signing_complete';
-                    var url = new URL(window.location.href);
+                    var url = new URL(window.parent.location.href);
                     url.searchParams.set('event', ev);
-                    window.location.href = url.toString();
+                    window.parent.location.href = url.toString();
                 }
             });
         })();
         </script>
-        """)
+        """, height=0, width=0)
 
         if st.button("🔄 I signed — refresh status", width='stretch'):
             st.session_state.esign_active_token = None
