@@ -218,6 +218,21 @@ _SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets"
 _SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _has_sheets_creds() -> bool:
+    """Whether Sheets credentials are obtainable by EITHER supported route.
+
+    Callers gating on credential availability must use this rather than
+    testing the file path alone, otherwise a hosted deploy — which legitimately
+    has no key file — looks unconfigured.
+    """
+    if SERVICE_ACCOUNT_PATH and os.path.exists(SERVICE_ACCOUNT_PATH):
+        return True
+    try:
+        return bool(st.secrets.get("gcp_service_account"))
+    except Exception:
+        return False
+
+
 @st.cache_resource(show_spinner=False)
 def _sheets_creds():
     """Load service account credentials for Google Sheets.
@@ -1244,7 +1259,7 @@ none becomes **CC**.
                                 "Created": env.get("created_at", "—"),
                                 "Brand": env.get("brand_id", "—"),
                             })
-                        st.dataframe(pd.DataFrame(summary), use_container_width=True, hide_index=True)
+                        st.dataframe(pd.DataFrame(summary), width='stretch', hide_index=True)
 
                         # Quick void for in-flight envelopes
                         voidable = [e for e in envs if e.get("status") in
@@ -1402,7 +1417,7 @@ if view == "form":
 
             submit_label = "Continue to signing →" if has_signing else "Submit"
             submitted = st.form_submit_button(submit_label, type="primary",
-                                               use_container_width=True)
+                                               width='stretch')
 
         if submitted:
             missing = [q for q, a in answers.items() if not a.strip() and q != questions[-1]]
@@ -1512,7 +1527,7 @@ if view == "form":
             unsafe_allow_html=True,
         )
         st.iframe(tok["sign_url"], height=int(_ss.get("iframe_height", 820)))
-        if st.button("🔄 I signed — refresh status", use_container_width=True):
+        if st.button("🔄 I signed — refresh status", width='stretch'):
             st.session_state.esign_active_token = None
             st.session_state.cp_form_submitted = False
             st.rerun()
@@ -1533,9 +1548,13 @@ st.sidebar.markdown('<div class="ce-tag">Connection</div>', unsafe_allow_html=Tr
 
 if not WORKBOOK_ID:
     st.sidebar.error("hub_workbook_id missing in secrets.json")
-if not SERVICE_ACCOUNT_PATH or not os.path.exists(SERVICE_ACCOUNT_PATH):
-    st.sidebar.error("google_service_account_path not set/missing in config.json")
-    st.info("Fix the sidebar errors, then reload.")
+if not _has_sheets_creds():
+    st.sidebar.error("Google service account not configured")
+    st.info(
+        "No Google credentials found. Either set `google_service_account_path` "
+        "in `config.json` (local), or add a `[gcp_service_account]` table to the "
+        "app's secrets (hosted). Then reload."
+    )
     st.stop()
 
 st.sidebar.caption(f"Workbook: `{WORKBOOK_ID[:12]}…`")
@@ -1647,7 +1666,7 @@ company_c = _company_col(clients)
 # ── 1. Client list ──────────────────────────────────────────────────────────
 st.markdown(f"**{len(clients)} client(s) loaded** from the '{CLIENT_TAB}' tab.")
 display_cols = [c for c in clients.columns if c.lower() not in ("form link", "token")]
-st.dataframe(clients[display_cols], use_container_width=True, hide_index=True)
+st.dataframe(clients[display_cols], width='stretch', hide_index=True)
 
 # ── 2. Form questions ───────────────────────────────────────────────────────
 st.divider()
@@ -1946,7 +1965,7 @@ if log:
     st.divider()
     st.markdown("**Send log**")
     log_df = pd.DataFrame(log[-50:])
-    st.dataframe(log_df, use_container_width=True, hide_index=True)
+    st.dataframe(log_df, width='stretch', hide_index=True)
     if st.button("Clear log", key="clear_log"):
         st.session_state.last_send_log = []
         st.rerun()
@@ -1961,7 +1980,7 @@ except Exception:
 if resp.empty:
     st.caption("No responses yet.")
 else:
-    st.dataframe(resp, use_container_width=True, hide_index=True)
+    st.dataframe(resp, width='stretch', hide_index=True)
 
 # ── Envelope tracking ───────────────────────────────────────────────────────
 if erpdocs_api:
@@ -1991,7 +2010,7 @@ if erpdocs_api:
                             "Signer": signer_status,
                             "Created": env.get("created_at", "—"),
                         })
-                    st.dataframe(pd.DataFrame(summary), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(summary), width='stretch', hide_index=True)
 
                     # Download button for completed ones
                     completed = [e for e in envs if e.get("status") == "Completed"]
