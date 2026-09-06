@@ -1139,6 +1139,18 @@ none becomes **CC**.
                     if raw_brand_id:
                         fields["brand_id"] = str(raw_brand_id)
 
+                    # Debug: show exactly what is being sent
+                    with st.expander("Debug - request payload", expanded=True):
+                        st.write("**Form fields sent:**")
+                        for k, v in fields.items():
+                            st.text(f"  {k} = {v}")
+                        fbytes = uploaded.read()
+                        st.write(f"**File:** {uploaded.name} "
+                                 f"({len(fbytes)} bytes, type={uploaded.type})")
+                        uploaded.seek(0)
+                        st.write(f"**API base:** {active_base}")
+                        st.write(f"**Endpoint:** POST {active_base}/api/v1/signpacks")
+
                     with st.spinner("Processing anchors and sending…"):
                         data, rerr = api.create_signpack_raw(
                             uploaded.read(), uploaded.name, fields,
