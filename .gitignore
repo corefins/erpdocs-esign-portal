@@ -1,0 +1,46 @@
+# ─── Secrets: never commit ───────────────────────────────────────────────────
+# Deny-by-default for anything credential-shaped, then re-allow the templates.
+secrets.json
+config.json
+signature_settings.json
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.secret
+*credential*
+*service-account*
+*service_account*
+
+# Streamlit's local secrets file — the hosted equivalent is set in the
+# dashboard, never in the repo.
+.streamlit/secrets.toml
+
+# Templates are safe and SHOULD be tracked.
+!secrets.example.json
+!.streamlit/secrets.toml.example
+
+# ─── Client data ─────────────────────────────────────────────────────────────
+*.xlsx
+*.xls
+*.csv
+split_output/
+Split_Invoices.zip
+bulk.pdf
+*.pdf
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ─── Editors / OS ────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+*.bak
