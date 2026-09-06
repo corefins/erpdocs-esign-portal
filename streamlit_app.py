@@ -846,7 +846,8 @@ if view == "settings":
             value=settings.get("redirect_url", ""),
             help="Where the signer goes after completing or declining. Must be on the same "
                  "origin as embed_origin. ERPDocs appends ?event=signing_complete or ?event=decline. "
-                 "Leave blank to show the default ERPDocs completion/decline page.",
+                 "Leave blank to use this app's built-in completion page (?view=complete). "
+                 "Set explicitly only if you want a custom landing page.",
             key="set_redirect_url",
         )
 
@@ -1492,6 +1493,9 @@ if view == "form":
 
     if not has_valid_token:
         # Mint token immediately — use settings for ttl, redirect_url, suppress, auth method
+        # Default redirect target is this app's own completion page (?view=complete),
+        # which ERPDocs hits with ?event=signing_complete|decline after signing ends.
+        redirect_url = _ss.get("redirect_url") or f"{FORM_BASE_URL}/?view=complete"
         payload = {
             "origin": origin,
             "ttl_seconds": int(_ss.get("ttl_seconds", 300)),
@@ -1501,8 +1505,8 @@ if view == "form":
                 "authenticated_at": datetime.now(timezone.utc).isoformat(),
             },
         }
-        if _ss.get("redirect_url"):
-            payload["redirect_url"] = _ss["redirect_url"]
+        if redirect_url:
+            payload["redirect_url"] = redirect_url
         if _ss.get("suppress_completion_email"):
             payload["suppress_completion_email"] = True
         with st.spinner("Preparing signing session…"):
@@ -1533,6 +1537,83 @@ if view == "form":
             st.rerun()
 
     st.markdown("</div></div>", unsafe_allow_html=True)
+    st.stop()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SIGNING COMPLETION VIEW (redirect target after embedded signing)
+# URL: ?view=complete&event=signing_complete|decline
+# ERPDocs appends ?event=signing_complete or ?event=decline to redirect_url.
+# This page is the default redirect target (see embed-token minting above).
+# ═══════════════════════════════════════════════════════════════════════════
+if view == "complete":
+    event = st.query_params.get("event", "")
+
+    # Break out of the signing iframe so the thank-you renders full-page.
+    st.markdown(
+        "<script>if (window.top !== window.self) { window.top.location.href = "
+        "window.location.href; }</script>",
+        unsafe_allow_html=True,
+    )
+
+    if event == "decline":
+        title = "Signing declined"
+        message = ("You've declined to sign this document. The sender has been "
+                   "notified. If this was a mistake, please contact the sender "
+                   "to request a new signing link.")
+        icon_bg, icon_color, icon_char = "#dc2626", "#fff", "\u2715"
+    elif event == "signing_complete":
+        title = "Document signed"
+        message = ("Thank you — your signature has been recorded. A signed copy "
+                   "and completion notification will be emailed to you shortly. "
+                   "You may now close this window.")
+        icon_bg, icon_color, icon_char = "#16a34a", "#fff", "\u2713"
+    else:
+        title = "Signing session ended"
+        message = ("Your signing session has ended. If you expected a "
+                   "confirmation, please check your email or contact the sender.")
+        icon_bg, icon_color, icon_char = "#0891b2", "#fff", "\u2713"
+
+    st.markdown(
+        f"""
+        <style>
+          .complete-wrap {{
+            max-width: 560px; margin: 3rem auto 0; padding: 0 1rem;
+          }}
+          .complete-card {{
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 40px 36px; text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+          }}
+          .complete-icon {{
+            width: 64px; height: 64px; border-radius: 50%;
+            background: {icon_bg}; color: {icon_color};
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 700; margin-bottom: 20px;
+          }}
+          .complete-card h1 {{
+            font-size: 1.5rem; font-weight: 700; color: #0f172a;
+            margin: 0 0 10px 0;
+          }}
+          .complete-card p {{
+            font-size: .92rem; color: #475569; line-height: 1.6;
+            margin: 0 0 8px 0;
+          }}
+          .complete-footer {{
+            margin-top: 22px; font-size: .8rem; color: #94a3b8;
+          }}
+        </style>
+        <div class="complete-wrap">
+          <div class="complete-card">
+            <div class="complete-icon">{icon_char}</div>
+            <h1>{title}</h1>
+            <p>{message}</p>
+            <div class="complete-footer">ERPDocs \u00b7 Secure e-signature</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.stop()
 
 
