@@ -1717,11 +1717,6 @@ if view == "complete":
           .complete-footer {{
             margin-top: 22px; font-size: .8rem; color: #94a3b8;
           }}
-          .complete-debug {{
-            margin-top: 20px; padding: 10px 14px; background: #f1f5f9;
-            border-radius: 8px; font-size: .76rem; color: #64748b;
-            text-align: left; font-family: monospace; word-break: break-all;
-          }}
         </style>
         <div class="complete-wrap">
           <div class="complete-card">
@@ -1729,7 +1724,6 @@ if view == "complete":
             <h1>{title}</h1>
             <p>{message}</p>
             <div class="complete-footer">ERPDocs \u00b7 Secure e-signature</div>
-            <div class="complete-debug">event = {event or "(none)"}<br>view = complete<br>url = {st.query_params.get("view", "")}</div>
           </div>
         </div>
         """,
