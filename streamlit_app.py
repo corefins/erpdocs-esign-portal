@@ -1573,6 +1573,11 @@ if view == "form":
             payload["redirect_url"] = _ss["redirect_url"]
         if _ss.get("suppress_completion_email"):
             payload["suppress_completion_email"] = True
+
+        # DEBUG: show what's being sent to ERPDocs
+        import json as _json
+        st.warning(f"**DEBUG payload sent to ERPDocs:**\n```json\n{_json.dumps(payload, indent=2)}\n```")
+
         with st.spinner("Preparing signing session…"):
             tok_data, tok_err = api.embed_token(sid, rid, payload)
         if tok_err:
@@ -1594,7 +1599,15 @@ if view == "form":
             "<style>.block-container { max-width: 100% !important; padding-top: 1rem !important; }</style>",
             unsafe_allow_html=True,
         )
-        st.iframe(tok["sign_url"], height=int(_ss.get("iframe_height", 820)))
+        # Use raw HTML iframe instead of st.iframe — st.iframe adds sandbox
+        # restrictions that break the ERPDocs redirect (the redirected Streamlit
+        # app can't load inside a sandboxed iframe).
+        _iframe_h = int(_ss.get("iframe_height", 820))
+        st.markdown(
+            f'<iframe src="{tok["sign_url"]}" width="100%" height="{_iframe_h}" '
+            f'style="border:none;frameborder:0;" allowfullscreen></iframe>',
+            unsafe_allow_html=True,
+        )
 
         # postMessage listener: ERPDocs posts 'complete' or 'decline' events
         # to the parent frame (this Streamlit app) when the signer finishes.
