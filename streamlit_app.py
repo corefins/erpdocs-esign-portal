@@ -1549,12 +1549,10 @@ if view == "form":
 if view == "complete":
     event = st.query_params.get("event", "")
 
-    # Break out of the signing iframe so the thank-you renders full-page.
-    st.markdown(
-        "<script>if (window.top !== window.self) { window.top.location.href = "
-        "window.location.href; }</script>",
-        unsafe_allow_html=True,
-    )
+    # NOTE: No iframe-breakout JS — Streamlit Community Cloud itself runs the app
+    # inside an iframe, so window.top !== window.self is always true there and
+    # would cause an infinite redirect loop. The completion page renders inside
+    # whatever iframe ERPDocs redirected, which is the correct behavior.
 
     if event == "decline":
         title = "Signing declined"
