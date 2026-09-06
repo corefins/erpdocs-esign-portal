@@ -847,9 +847,9 @@ if view == "settings":
             value=settings.get("redirect_url", ""),
             help="Where the signer goes after completing or declining. Must be on the same "
                  "origin as embed_origin. ERPDocs appends ?event=signing_complete or ?event=decline. "
-                 "Leave blank \u2014 the app listens for ERPDocs postMessage events and shows a "
-                 "built-in completion card automatically. Set explicitly only if you have a "
-                 "custom landing page hosted outside Streamlit Community Cloud.",
+                 "Leave blank: postMessage listener handles completion (works on Streamlit Cloud). "
+                 "Set explicitly to test the redirect_url API: locally use "
+                 "http://localhost:8501/?view=complete; on Streamlit Cloud this will redirect-loop.",
             key="set_redirect_url",
         )
 
@@ -1639,6 +1639,84 @@ if view == "form":
             st.rerun()
 
     st.markdown("</div></div>", unsafe_allow_html=True)
+    st.stop()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SIGNING COMPLETION VIEW (redirect_url API target)
+# URL: ?view=complete&event=signing_complete|decline
+# Used when testing the ERPDocs redirect_url API. ERPDocs navigates the
+# signing iframe here with ?event= appended. Works locally (localhost);
+# on Streamlit Community Cloud this will redirect-loop — use postMessage
+# there instead (the form view's completion_event check handles that).
+# ═══════════════════════════════════════════════════════════════════════════
+if view == "complete":
+    event = st.query_params.get("event", "")
+
+    if event == "decline":
+        title = "Signing declined"
+        message = ("You\u2019ve declined to sign this document. The sender has been "
+                   "notified. If this was a mistake, please contact the sender "
+                   "to request a new signing link.")
+        icon_bg, icon_color, icon_char = "#dc2626", "#fff", "\u2715"
+    elif event == "signing_complete":
+        title = "Document signed"
+        message = ("Thank you \u2014 your signature has been recorded. A signed copy "
+                   "and completion notification will be emailed to you shortly. "
+                   "You may now close this window.")
+        icon_bg, icon_color, icon_char = "#16a34a", "#fff", "\u2713"
+    else:
+        title = "Signing session ended"
+        message = ("Your signing session has ended. If you expected a "
+                   "confirmation, please check your email or contact the sender.")
+        icon_bg, icon_color, icon_char = "#0891b2", "#fff", "\u2713"
+
+    st.markdown(
+        f"""
+        <style>
+          .complete-wrap {{
+            max-width: 560px; margin: 3rem auto 0; padding: 0 1rem;
+          }}
+          .complete-card {{
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 40px 36px; text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+          }}
+          .complete-icon {{
+            width: 64px; height: 64px; border-radius: 50%;
+            background: {icon_bg}; color: {icon_color};
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 700; margin-bottom: 20px;
+          }}
+          .complete-card h1 {{
+            font-size: 1.5rem; font-weight: 700; color: #0f172a;
+            margin: 0 0 10px 0;
+          }}
+          .complete-card p {{
+            font-size: .92rem; color: #475569; line-height: 1.6;
+            margin: 0 0 8px 0;
+          }}
+          .complete-footer {{
+            margin-top: 22px; font-size: .8rem; color: #94a3b8;
+          }}
+          .complete-debug {{
+            margin-top: 20px; padding: 10px 14px; background: #f1f5f9;
+            border-radius: 8px; font-size: .76rem; color: #64748b;
+            text-align: left; font-family: monospace; word-break: break-all;
+          }}
+        </style>
+        <div class="complete-wrap">
+          <div class="complete-card">
+            <div class="complete-icon">{icon_char}</div>
+            <h1>{title}</h1>
+            <p>{message}</p>
+            <div class="complete-footer">ERPDocs \u00b7 Secure e-signature</div>
+            <div class="complete-debug">event = {event or "(none)"}<br>view = complete<br>url = {st.query_params.get("view", "")}</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.stop()
 
 
