@@ -1653,6 +1653,24 @@ if view == "form":
 if view == "complete":
     event = st.query_params.get("event", "")
 
+    # Hide ALL Streamlit chrome — this page loads inside the ERPDocs signing
+    # iframe after redirect, so only the completion card should be visible.
+    st.markdown(
+        """
+        <style>
+          /* Hide sidebar, header, footer, main menu, toolbar */
+          [data-testid="stSidebar"] { display: none !important; }
+          [data-testid="stHeader"] { display: none !important; }
+          [data-testid="stToolbar"] { display: none !important; }
+          [data-testid="stMainMenu"] { display: none !important; }
+          footer { display: none !important; }
+          #stMainblockContainer { padding-top: 0 !important; }
+          .block-container { padding-top: 1rem !important; max-width: 100% !important; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     if event == "decline":
         title = "Signing declined"
         message = ("You\u2019ve declined to sign this document. The sender has been "
