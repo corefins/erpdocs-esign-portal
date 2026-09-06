@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing Complete - ERPDocs</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 48px 40px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      max-width: 480px;
+      width: 100%;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .icon.success { background: #16a34a; color: #fff; }
+    .icon.decline { background: #dc2626; color: #fff; }
+    .icon.neutral { background: #0891b2; color: #fff; }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 10px 0;
+    }
+    p {
+      font-size: .92rem;
+      color: #475569;
+      line-height: 1.6;
+      margin: 0 0 8px 0;
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: .8rem;
+      color: #94a3b8;
+    }
+    .footer a {
+      color: #0891b2;
+      text-decoration: none;
+    }
+    .footer a:hover { text-decoration: underline; }
+    .debug {
+      margin-top: 20px;
+      padding: 10px 14px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      font-size: .76rem;
+      color: #64748b;
+      text-align: left;
+      font-family: 'SF Mono', 'Monaco', monospace;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon" id="icon"></div>
+    <h1 id="title"></h1>
+    <p id="message"></p>
+    <div class="footer">ERPDocs &middot; Secure e-signature</div>
+    <div class="debug" id="debug"></div>
+  </div>
+
+  <script>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var event = params.get('event') || '';
+      var icon = document.getElementById('icon');
+      var title = document.getElementById('title');
+      var message = document.getElementById('message');
+      var debug = document.getElementById('debug');
+
+      if (event === 'signing_complete') {
+        icon.className = 'icon success';
+        icon.textContent = '\u2713';
+        title.textContent = 'Document signed';
+        message.textContent = 'Thank you \u2014 your signature has been recorded. A signed copy and completion notification will be emailed to you shortly. You may now close this window.';
+      } else if (event === 'decline') {
+        icon.className = 'icon decline';
+        icon.textContent = '\u2715';
+        title.textContent = 'Signing declined';
+        message.textContent = "You've declined to sign this document. The sender has been notified. If this was a mistake, please contact the sender to request a new signing link.";
+      } else {
+        icon.className = 'icon neutral';
+        icon.textContent = '\u2713';
+        title.textContent = 'Signing session ended';
+        message.textContent = 'Your signing session has ended. If you expected a confirmation, please check your email or contact the sender.';
+      }
+
+      // Debug: show all query params (useful for testing the redirect_url API)
+      var debugParts = [];
+      params.forEach(function(val, key) {
+        debugParts.push(key + ' = ' + val);
+      });
+      debug.textContent = debugParts.length
+        ? 'Query params:\n' + debugParts.join('\n')
+        : 'No query params received';
+    })();
+  </script>
+</body>
+</html>
